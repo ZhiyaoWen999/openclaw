@@ -737,6 +737,7 @@ async function initSessionStateAttemptLocked(
       persistedAuthProfileOverrideSource = preservedSelection.authProfileOverrideSource;
       persistedAuthProfileOverrideCompactionCount =
         preservedSelection.authProfileOverrideCompactionCount;
+      persistedLabel = entry.label;
       // Behavior overrides carry across ANY new-session mint (explicit /new AND
       // implicit daily/idle rollover), mirroring the model/auth carry above
       // (#90119). Any persisted level is safe to forward — user `/think` or a
@@ -754,7 +755,6 @@ async function initSessionStateAttemptLocked(
     if (resetTriggered && entry) {
       // Explicit /new and /reset should rotate the underlying CLI conversation too.
       // Keep the model/auth choice, but force the next turn to mint a fresh CLI binding.
-      persistedLabel = entry.label;
       persistedSpawnedBy = entry.spawnedBy;
       persistedSpawnedWorkspaceDir = entry.spawnedWorkspaceDir;
       persistedSpawnedCwd = entry.spawnedCwd;

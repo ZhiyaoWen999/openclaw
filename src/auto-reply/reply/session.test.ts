@@ -4198,6 +4198,54 @@ describe("initSessionState preserves behavior overrides across /new and /reset",
     }
   });
 
+  it("preserves dashboard labels on implicit daily rollover", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(2026, 0, 18, 5, 0, 0));
+      const storePath = await createStorePath("openclaw-stale-dashboard-label-");
+      const sessionKey = "agent:main:dashboard:labelled-session";
+      const existingSessionId = "stale-dashboard-labelled-session";
+      const transcriptPath = path.join(path.dirname(storePath), `${existingSessionId}.jsonl`);
+
+      await writeSessionStoreFast(storePath, {
+        [sessionKey]: {
+          label: "Other",
+          sessionId: existingSessionId,
+          updatedAt: new Date(2026, 0, 18, 3, 0, 0).getTime(),
+        },
+      });
+      await fs.writeFile(transcriptPath, '{"type":"message"}\n', "utf8");
+
+      const cfg = { session: { store: storePath } } as OpenClawConfig;
+      const result = await initSessionState({
+        ctx: {
+          Body: "hello",
+          RawBody: "hello",
+          CommandBody: "hello",
+          From: "user-stale-dashboard-label",
+          To: "bot",
+          ChatType: "direct",
+          SessionKey: sessionKey,
+          Provider: "webchat",
+          Surface: "webchat",
+        },
+        cfg,
+        commandAuthorized: true,
+      });
+
+      expect(result.isNewSession).toBe(true);
+      expect(result.resetTriggered).toBe(false);
+      expect(result.sessionId).not.toBe(existingSessionId);
+      expect(result.sessionEntry.label).toBe("Other");
+      expect(readSessionStoreForTest(storePath)[sessionKey]).toMatchObject({
+        label: "Other",
+        sessionId: result.sessionId,
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("defers implicit daily rollover while the same session has an active run", async () => {
     vi.useFakeTimers();
     const existingSessionId = "active-stale-session";
